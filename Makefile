@@ -13,10 +13,12 @@ test:
 .PHONY: fmt
 fmt:
 	$(GO) run golang.org/x/tools/cmd/goimports@v0.35.0 -w .
+	go mod tidy
 
 .PHONY: lint
 lint:
 	$(GO) run golang.org/x/tools/cmd/goimports@v0.35.0 -d .
+	go mod tidy -diff
 	golangci-lint run
 
 .PHONY: clean

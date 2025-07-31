@@ -19,5 +19,11 @@ COPY --from=builder /src/bin/seccomp-daemonset /seccomp-daemonset
 # This is a compromise between performance and resource usage, while also reducing from the probable default of 8+ cores on most production machines.
 ENV GOMAXPROCS=2
 
-CMD ["/seccomp-daemonset"]
-HEALTHCHECK CMD ["/seccomp-daemonset", "healthcheck"]
+# We want root here. This is required as the kubelet will generally also run as root.
+USER 0:0
+
+WORKDIR /
+
+ENTRYPOINT ["/seccomp-daemonset"]
+HEALTHCHECK --start-period=1s --start-interval=3s --interval=120s --timeout=3s \
+    CMD ["/seccomp-daemonset", "healthcheck"]

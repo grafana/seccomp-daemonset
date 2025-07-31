@@ -4,3 +4,6 @@
 
 # We build binaries to here
 /bin/
+
+# Test files :)
+/profiles/
