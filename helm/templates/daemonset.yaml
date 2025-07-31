@@ -1,0 +1,77 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: {{ .Values.nameOverride | default .Chart.Name }}
+  labels:
+    {{ .Values.labels | toYaml | nindent 4 }}
+spec:
+  selector:
+    matchLabels:
+      {{ .Values.labels | toYaml | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{ .Values.labels | toYaml | nindent 8 }}
+    spec:
+      {{- if .Values.tolerations }}
+      tolerations:
+        {{ .Values.tolerations | toYaml | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: seccomp-daemonset
+          image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          resources:
+            requests:
+              cpu: {{ .Values.resources.requests.cpu | default "null" }}
+              memory: {{ .Values.resources.requests.memory | default "null" }}
+            limits:
+              cpu: {{ .Values.resources.limits.cpu | default "null" }}
+              memory: {{ .Values.resources.limits.memory | default "null" }}
+          ports:
+            - name: {{ .Values.metrics.portName }}
+              containerPort: 8080
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            failureThreshold: 3
+            periodSeconds: 120
+            initialDelaySeconds: 5
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            failureThreshold: 3
+            periodSeconds: 120
+            initialDelaySeconds: 5
+          startupProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            failureThreshold: 1
+            periodSeconds: 5
+            initialDelaySeconds: 1
+          volumeMounts:
+            - name: host-profiles
+              mountPath: {{ .Values.profileDirectory }}
+            - name: seccomp-profiles
+              mountPath: /seccomp-profiles
+          args:
+            - --source=/seccomp-profiles
+            - --destination={{ .Values.profileDirectory }}
+            {{- if .Values.metrics.enableDefaultCollectors }}
+            - --enable-default-collectors
+            {{- end }}
+      {{- if .Values.priorityClassName }}
+      priorityClassName: {{ .Values.priorityClassName }}
+      {{- end }}
+      volumes:
+        - name: host-profiles
+          hostPath:
+            path: {{ .Values.profileDirectory }}
+            type: DirectoryOrCreate
+        - name: seccomp-profiles
+          configMap:
+            name: {{ .Values.nameOverride | default .Chart.Name }}-profiles
