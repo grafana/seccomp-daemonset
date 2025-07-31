@@ -13,7 +13,7 @@ RUN apk add --no-cache ca-certificates && update-ca-certificates --fresh
 FROM scratch
 
 COPY --from=certs /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
-COPY --from=builder /src/bin/seccomp-operator /seccomp-operator
+COPY --from=builder /src/bin/seccomp-daemonset /seccomp-daemonset
 
-CMD ["/seccomp-operator"]
-HEALTHCHECK CMD ["/seccomp-operator", "healthcheck"]
+CMD ["/seccomp-daemonset"]
+HEALTHCHECK CMD ["/seccomp-daemonset", "healthcheck"]

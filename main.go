@@ -3,10 +3,11 @@ package main
 import (
 	"context"
 	"errors"
+	"log/slog"
 	"os"
 	"os/signal"
 
-	"github.com/grafana/seccomp-operator/cmd"
+	"github.com/grafana/seccomp-daemonset/cmd"
 )
 
 func main() {
@@ -14,6 +15,8 @@ func main() {
 }
 
 func run() int {
+	initLogger()
+
 	ctx := context.Background()
 	ctx, cancel := signal.NotifyContext(ctx, os.Interrupt)
 	defer cancel()
@@ -27,4 +30,12 @@ func run() int {
 	}
 
 	return 0
+}
+
+func initLogger() {
+	handler := slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
+		Level: slog.LevelInfo,
+	})
+	logger := slog.New(handler)
+	slog.SetDefault(logger)
 }

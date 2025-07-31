@@ -1,20 +1,25 @@
 package cmd
 
 import (
-	"github.com/grafana/seccomp-operator/cmd/daemon"
-	"github.com/grafana/seccomp-operator/cmd/healthcheck"
-	"github.com/grafana/seccomp-operator/cmd/operator"
+	"context"
+
+	"github.com/grafana/seccomp-daemonset/cmd/healthcheck"
 	"github.com/urfave/cli/v3"
 )
 
 func NewRoot() *cli.Command {
 	return &cli.Command{
-		Name:  "seccomp-operator",
+		Name:  "seccomp-daemonset",
 		Usage: "Kubernetes operator for managing seccomp profiles",
 		Commands: []*cli.Command{
-			daemon.NewCmd(),
 			healthcheck.NewCmd(),
-			operator.NewCmd(),
+		},
+		Action: func(ctx context.Context, c *cli.Command) error {
+			return Run(ctx)
 		},
 	}
+}
+
+func Run(ctx context.Context) error {
+	return nil
 }

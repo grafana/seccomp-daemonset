@@ -1,4 +1,4 @@
-module github.com/grafana/seccomp-operator
+module github.com/grafana/seccomp-daemonset
 
 go 1.24.5
 
