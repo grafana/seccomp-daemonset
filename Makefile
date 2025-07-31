@@ -1,10 +1,11 @@
 GO ?= go
 
 BIN_DIR := bin
+BIN_NAME ?= seccomp-daemonset
 
 .PHONY: build
 build: $(BIN_DIR)
-	CGO_ENABLED=0 $(GO) build -ldflags="-extldflags=-static" -o $(BIN_DIR)/seccomp-daemonset .
+	CGO_ENABLED=0 $(GO) build -ldflags="-extldflags=-static" -o $(BIN_DIR)/$(BIN_NAME) .
 
 .PHONY: test
 test:
