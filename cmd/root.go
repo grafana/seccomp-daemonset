@@ -7,6 +7,7 @@ import (
 	"io"
 	"io/fs"
 	"log/slog"
+	"net"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -47,6 +48,10 @@ func NewRoot() *cli.Command {
 				Usage: "Create the destination directory if it does not exist, including parents",
 				Value: true,
 			},
+			&cli.BoolFlag{
+				Name:  "one-shot",
+				Usage: "Run the useful work, then exit without waiting on any HTTP requests. Still runs the server, but it won't block on it. Useful for testing.",
+			},
 
 			&cli.StringFlag{
 				Name:  "listen-address",
@@ -65,7 +70,7 @@ func NewRoot() *cli.Command {
 				registry.MustRegister(collectors.NewProcessCollector(collectors.ProcessCollectorOpts{}))
 			}
 
-			return Run(ctx, c.String("listen-address"), filepath.Clean(c.String("source")), filepath.Clean(c.String("destination")), c.Bool("mkdir"), registry)
+			return Run(ctx, c.String("listen-address"), filepath.Clean(c.String("source")), filepath.Clean(c.String("destination")), c.Bool("mkdir"), registry, c.Bool("one-shot"))
 		},
 	}
 }
@@ -75,7 +80,7 @@ type registry interface {
 	prometheus.Gatherer
 }
 
-func Run(ctx context.Context, listenAddr, source, destination string, mkdir bool, registry registry) error {
+func Run(ctx context.Context, listenAddr, source, destination string, mkdir bool, registry registry, oneShot bool) error {
 	if mkdir {
 		if err := os.MkdirAll(destination, 0750); err != nil {
 			return cli.Exit(fmt.Errorf("failed to create destination directory %q: %w", destination, err), 1)
@@ -98,10 +103,15 @@ func Run(ctx context.Context, listenAddr, source, destination string, mkdir bool
 		Addr:              listenAddr,
 		Handler:           mux,
 	}
+	defer func() {
+		if err := server.Close(); err != nil {
+			slog.Error("failed to close HTTP server", "err", err)
+		}
+	}()
 
 	serverErr := make(chan error, 1)
 	go func() {
-		serverErr <- server.ListenAndServe()
+		serverErr <- listenAndServe(server)
 	}()
 	slog.Info("http server started", "address", listenAddr)
 
@@ -112,6 +122,10 @@ func Run(ctx context.Context, listenAddr, source, destination string, mkdir bool
 		}
 		slog.Error("failed to copy files", "err", err)
 		return fmt.Errorf("failed to copy files from %q to %q: %w", source, destination, err)
+	}
+	if oneShot {
+		slog.Info("one-shot mode enabled, exiting after copying files")
+		return nil
 	}
 
 	select {
@@ -290,5 +304,26 @@ func copyFile(srcPath, dstPath string) error {
 		if err != nil {
 			return fmt.Errorf("failed to read from source file %q: %w", srcPath, err)
 		}
+	}
+}
+
+func listenAndServe(server *http.Server) error {
+	if strings.HasPrefix(server.Addr, "/") {
+		// If the address starts with a slash, we assume it's a Unix domain socket.
+		// We primarily support Unix sockets for tests.
+		listener, err := net.Listen("unix", server.Addr)
+		if err != nil {
+			return fmt.Errorf("failed to listen on Unix socket %q: %w", server.Addr, err)
+		}
+		defer func() {
+			if err := listener.Close(); err != nil {
+				slog.Warn("failed to close Unix socket listener", "addr", server.Addr, "err", err)
+			}
+		}()
+		server.Addr = "" // Clear the Addr field since we're using a listener
+		return server.Serve(listener)
+	} else {
+		// Otherwise, it's probably a TCP address.
+		return server.ListenAndServe()
 	}
 }
