@@ -39,7 +39,9 @@ func TestServerStarts(t *testing.T) {
 		if err != nil {
 			return false
 		}
-		defer resp.Body.Close()
+		defer func() {
+			_ = resp.Body.Close()
+		}()
 		return resp.StatusCode == http.StatusOK
 	}, 3*time.Second, 100*time.Millisecond, "HTTP server should start within 3 seconds")
 }
@@ -64,7 +66,9 @@ func TestServerServesMetrics(t *testing.T) {
 		if err != nil {
 			return false
 		}
-		defer resp.Body.Close()
+		defer func() {
+			_ = resp.Body.Close()
+		}()
 		return resp.StatusCode == http.StatusOK
 	}, 3*time.Second, 100*time.Millisecond, "HTTP server should start within 3 seconds")
 }
