@@ -94,13 +94,16 @@ jobs:
       - name: Set up k3s
         run: curl -sfL https://get.k3s.io | K3S_KUBECONFIG_MODE=666 sh -
 
-      - run: docker build -t test-image .
+      - run: docker build -t grafana/seccomp-daemonset:test .
         env:
           DOCKER_BUILDKIT: 1
           BUILDKIT_STEP_LOG_MAX_SIZE: -1
           BUILDKIT_STEP_LOG_MAX_SPEED: -1
       - name: Load Docker image into k3s
-        run: docker save test-image | sudo k3s ctr images import -
+        run: docker save grafana/seccomp-daemonset:test | sudo k3s ctr images import -
 
-      - name: Test that kubectl works
-        run: k3s kubectl get nodes
+      - name: bats
+        working-directory: tests/docker
+        run: ./test.sh
+        env:
+          TERM: linux
