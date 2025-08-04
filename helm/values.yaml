@@ -23,6 +23,9 @@ metrics:
 labels:
   app.kubernetes.io/name: seccomp-daemonset
 
+# Annotations to add to the DaemonSet. This is useful for things like https://github.com/stakater/Reloader.
+annotations: {}
+
 # What tolerations should be on the DaemonSet?
 tolerations:
   - key: "node-role.kubernetes.io/no-schedule"
