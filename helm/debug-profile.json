@@ -1,0 +1,9 @@
+{
+    "volumeMounts": [
+        {
+            "name": "seccomp-profiles",
+            "mountPath": "/seccomp-profiles",
+            "readOnly": true
+        }
+    ]
+}
