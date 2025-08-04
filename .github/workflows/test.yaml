@@ -92,7 +92,7 @@ jobs:
       - uses: bats-core/bats-action@42fcc8700f773c075a16a90eb11674c0318ad507 # 3.0.1
 
       - name: Set up k3s
-        run: curl -sfL https://get.k3s.io | sh -
+        run: curl -sfL https://get.k3s.io | K3S_KUBECONFIG_MODE=666 sh -
 
       - run: docker build -t test-image .
         env:
