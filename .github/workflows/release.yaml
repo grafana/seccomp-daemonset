@@ -22,7 +22,7 @@ jobs:
         with:
           persist-credentials: false
       - uses: azure/setup-helm@b9e51907a09c216f16ebe8536097933489208112 # v4
-      - run: helm package . --appVersion "$TAG"
+      - run: helm package . --app-version "$TAG"
         env:
           TAG: ${{ github.ref_name }}
         working-directory: helm
