@@ -79,3 +79,28 @@ jobs:
         run: ./test.sh test-image
         env:
           TERM: linux
+
+  k3s:
+    name: Run k3s tests
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: bats-core/bats-action@42fcc8700f773c075a16a90eb11674c0318ad507 # 3.0.1
+
+      - name: Set up k3s
+        run: curl -sfL https://get.k3s.io | sh -
+
+      - run: docker build -t test-image .
+        env:
+          DOCKER_BUILDKIT: 1
+          BUILDKIT_STEP_LOG_MAX_SIZE: -1
+          BUILDKIT_STEP_LOG_MAX_SPEED: -1
+      - name: Load Docker image into k3s
+        run: docker save test-image | sudo k3s ctr images import -
+
+      - name: Test that kubectl works
+        run: k3s kubectl get nodes
