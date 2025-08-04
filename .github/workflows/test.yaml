@@ -58,3 +58,54 @@ jobs:
         with:
           go-version-file: go.mod
       - uses: golangci/golangci-lint-action@4afd733a84b1f43292c63897423277bb7f4313a9 # v8
+
+  docker:
+    name: Build and test Docker image
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: bats-core/bats-action@42fcc8700f773c075a16a90eb11674c0318ad507 # 3.0.1
+      - run: docker build -t test-image .
+        env:
+          DOCKER_BUILDKIT: 1
+          BUILDKIT_STEP_LOG_MAX_SIZE: -1
+          BUILDKIT_STEP_LOG_MAX_SPEED: -1
+      - name: bats
+        working-directory: tests/docker
+        run: ./test.sh test-image
+        env:
+          TERM: linux
+
+  k3s:
+    name: Run k3s tests
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: bats-core/bats-action@42fcc8700f773c075a16a90eb11674c0318ad507 # 3.0.1
+
+      - name: Set up k3s
+        run: curl -sfL https://get.k3s.io | K3S_KUBECONFIG_MODE=666 sh -
+      - name: Set up Helm
+        run: curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+
+      - run: docker build -t grafana/seccomp-daemonset:test .
+        env:
+          DOCKER_BUILDKIT: 1
+          BUILDKIT_STEP_LOG_MAX_SIZE: -1
+          BUILDKIT_STEP_LOG_MAX_SPEED: -1
+      - name: Load Docker image into k3s
+        run: docker save grafana/seccomp-daemonset:test | sudo k3s ctr images import -
+
+      - name: bats
+        working-directory: tests/k3s
+        run: ./test.sh
+        env:
+          TERM: linux
