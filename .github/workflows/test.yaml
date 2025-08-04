@@ -93,6 +93,8 @@ jobs:
 
       - name: Set up k3s
         run: curl -sfL https://get.k3s.io | K3S_KUBECONFIG_MODE=666 sh -
+      - name: Set up Helm
+        run: curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
 
       - run: docker build -t grafana/seccomp-daemonset:test .
         env:

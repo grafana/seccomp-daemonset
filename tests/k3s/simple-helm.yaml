@@ -1,0 +1,4 @@
+image:
+  repository: grafana/seccomp-daemonset
+  tag: test
+  pullPolicy: Never
