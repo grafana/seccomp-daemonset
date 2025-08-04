@@ -32,8 +32,9 @@ func TestServerStarts(t *testing.T) {
 		err := NewRoot().Run(t.Context(), []string{"seccomp-daemonset", "--listen-address", socket, "--source", src, "--destination", dst})
 		require.NoError(t, err, "should start server without error")
 	}()
+	client := unixClient(socket)
+	t.Cleanup(client.CloseIdleConnections)
 	require.Eventually(t, func() bool {
-		client := unixClient(socket)
 		resp, err := client.Get("http://unix/healthz")
 		if err != nil {
 			return false
@@ -56,8 +57,9 @@ func TestServerServesMetrics(t *testing.T) {
 		err := NewRoot().Run(t.Context(), []string{"seccomp-daemonset", "--listen-address", socket, "--source", src, "--destination", dst})
 		require.NoError(t, err, "should start server without error")
 	}()
+	client := unixClient(socket)
+	t.Cleanup(client.CloseIdleConnections)
 	require.Eventually(t, func() bool {
-		client := unixClient(socket)
 		resp, err := client.Get("http://unix/metrics")
 		if err != nil {
 			return false
