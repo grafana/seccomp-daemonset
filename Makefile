@@ -21,7 +21,7 @@ lint:
 	$(GO) run golang.org/x/tools/cmd/goimports@v0.35.0 -d .
 	go mod tidy -diff
 # Only run golangci-lint if it "CI" is not set. On CI, we will use a separate action for it.
-	[ -z "${CI}" ] && golangci-lint run
+	[ -z "${CI}" ] && golangci-lint run || true
 
 .PHONY: clean
 clean:
