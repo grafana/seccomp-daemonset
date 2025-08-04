@@ -23,11 +23,19 @@ spec:
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           resources:
             requests:
-              cpu: {{ .Values.resources.requests.cpu | default "null" }}
-              memory: {{ .Values.resources.requests.memory | default "null" }}
+              {{- if .Values.resources.requests.cpu }}
+              cpu: {{ .Values.resources.requests.cpu }}
+              {{- end }}
+              {{- if .Values.resources.requests.memory }}
+              memory: {{ .Values.resources.requests.memory }}
+              {{- end }}
             limits:
-              cpu: {{ .Values.resources.limits.cpu | default "null" }}
-              memory: {{ .Values.resources.limits.memory | default "null" }}
+              {{- if .Values.resources.limits.cpu }}
+              cpu: {{ .Values.resources.limits.cpu }}
+              {{- end }}
+              {{- if or .Values.resources.limits.memory .Values.resources.requests.memory }}
+              memory: {{ .Values.resources.limits.memory | default .Values.resources.requests.memory }}
+              {{- end }}
           ports:
             - name: {{ .Values.metrics.portName }}
               containerPort: 8080
