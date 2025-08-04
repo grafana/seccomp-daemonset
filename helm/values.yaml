@@ -37,4 +37,7 @@ profileDirectory: /var/lib/kubelet/seccomp/profiles
 # The key is the name of the profile file relative to the `profileDirectory` value.
 # The value is the content of the file; it should be a valid seccomp profile in JSON format.
 # If not set, no profiles will be loaded, but the DaemonSet will still exist and run the pods.
+#
+# Keys here MUST NOT begin with two dots (..), otherwise they will be ignored. This is because Kubernetes
+# uses this prefix in the mounts, and we ignore the files entirely.
 profiles: {}

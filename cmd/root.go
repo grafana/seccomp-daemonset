@@ -182,6 +182,11 @@ func copyFiles(ctx context.Context, src, dst string, registry prometheus.Registe
 		if d.IsDir() {
 			return nil // we don't care for directories
 		}
+		if shouldIgnore, why := shouldIgnore(path); shouldIgnore {
+			slog.Debug("ignoring file", "path", path, "reason", why)
+			countMetric.WithLabelValues("ignored", path).Inc()
+			return nil
+		}
 
 		srcPath := filepath.Join(path)
 		dstPath := filepath.Join(dst, strings.TrimPrefix(path, src))
@@ -201,6 +206,20 @@ func copyFiles(ctx context.Context, src, dst string, registry prometheus.Registe
 		}
 		return nil
 	})
+}
+
+func shouldIgnore(path string) (bool, string) {
+	if strings.HasPrefix(filepath.Base(path), "..") {
+		return true, "file has .. prefix"
+	}
+	// If any element in the path also has a ".." prefix, we must ignore it, as this is probably a directory like "..data" or "..2025_08_04_06_45_56.476364577".
+	for elem := range strings.SplitSeq(path, string(filepath.Separator)) {
+		if strings.HasPrefix(elem, "..") {
+			return true, fmt.Sprintf("file has element with .. prefix: %q", elem)
+		}
+	}
+
+	return false, ""
 }
 
 func duplicateIndividualFile(src, dst string) error {
