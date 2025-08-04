@@ -23,7 +23,7 @@ metrics:
 labels:
   app.kubernetes.io/name: seccomp-daemonset
 
-# Annotations to add to the DaemonSet. This is useful for things like https://github.com/stakater/Reloader.
+# Annotations to add to the DaemonSet and pods. This is useful for things like https://github.com/stakater/Reloader or hashing the input configuration to force reloads.
 annotations: {}
 
 # What tolerations should be on the DaemonSet?
