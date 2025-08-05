@@ -113,6 +113,12 @@ func Run(ctx context.Context, listenAddr, source, destination string, mkdir bool
 	go func() {
 		serverErr <- listenAndServe(server)
 	}()
+	go func() {
+		<-ctx.Done()
+		if err := server.Close(); err != nil {
+			slog.Error("failed to close HTTP server on context cancellation", "err", err)
+		}
+	}()
 	slog.Info("http server started", "address", listenAddr)
 
 	if err := copyFiles(ctx, source, destination, registry); err != nil {
