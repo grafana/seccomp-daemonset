@@ -12,6 +12,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/grafana/seccomp-daemonset/cmd/healthcheck"
@@ -19,6 +20,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/collectors"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/urfave/cli/v3"
+	"golang.org/x/sync/semaphore"
 )
 
 func NewRoot() *cli.Command {
@@ -113,6 +115,12 @@ func Run(ctx context.Context, listenAddr, source, destination string, mkdir bool
 	go func() {
 		serverErr <- listenAndServe(server)
 	}()
+	go func() {
+		<-ctx.Done()
+		if err := server.Close(); err != nil {
+			slog.Error("failed to close HTTP server on context cancellation", "err", err)
+		}
+	}()
 	slog.Info("http server started", "address", listenAddr)
 
 	if err := copyFiles(ctx, source, destination, registry); err != nil {
@@ -186,7 +194,10 @@ func copyFiles(ctx context.Context, src, dst string, registry prometheus.Registe
 	}, []string{"status", "path"})
 	registry.MustRegister(countMetric)
 
-	return filepath.WalkDir(src, func(path string, d fs.DirEntry, err error) error {
+	sema := semaphore.NewWeighted(64)
+	wg := &sync.WaitGroup{}
+
+	err := filepath.WalkDir(src, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
@@ -210,16 +221,44 @@ func copyFiles(ctx context.Context, src, dst string, registry prometheus.Registe
 			return nil
 		}
 
-		slog.Info("copying file", "src", srcPath, "dst", dstPath)
-		if err := duplicateIndividualFile(srcPath, dstPath); err != nil {
-			slog.Error("failed to copy file", "src", srcPath, "dst", dstPath, "err", err)
-			countMetric.WithLabelValues("failure", path).Inc()
-		} else {
-			slog.Info("file copied successfully", "src", srcPath, "dst", dstPath)
-			countMetric.WithLabelValues("success", path).Inc()
-		}
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			if err := sema.Acquire(ctx, 1); err != nil {
+				slog.Warn("failed to acquire semaphore", "err", err)
+				return
+			}
+			defer sema.Release(1)
+
+			slog.Info("copying file", "src", srcPath, "dst", dstPath)
+			if err := duplicateIndividualFile(srcPath, dstPath); err != nil {
+				slog.Error("failed to copy file", "src", srcPath, "dst", dstPath, "err", err)
+				countMetric.WithLabelValues("failure", path).Inc()
+			} else {
+				slog.Info("file copied successfully", "src", srcPath, "dst", dstPath)
+				countMetric.WithLabelValues("success", path).Inc()
+			}
+		}()
 		return nil
 	})
+	if err != nil {
+		return fmt.Errorf("failed to walk source directory %q: %w", src, err)
+	}
+
+	wait := make(chan struct{})
+	go func() {
+		wg.Wait()
+		close(wait)
+	}()
+
+	select {
+	case <-ctx.Done():
+		slog.Info("context cancelled while copying files")
+		return ctx.Err()
+	case <-wait:
+		slog.Info("all files copied successfully")
+		return nil
+	}
 }
 
 func shouldIgnore(path string) (bool, string) {
