@@ -4,8 +4,8 @@ go 1.24.5
 
 require (
 	github.com/prometheus/client_golang v1.23.0
-	github.com/stretchr/testify v1.10.0
-	github.com/urfave/cli/v3 v3.3.8
+	github.com/stretchr/testify v1.11.1
+	github.com/urfave/cli/v3 v3.8.0
 	golang.org/x/sync v0.13.0
 )
 
