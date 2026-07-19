@@ -1,12 +1,12 @@
 module github.com/grafana/seccomp-daemonset
 
-go 1.24.5
+go 1.25.0
 
 require (
 	github.com/prometheus/client_golang v1.23.0
 	github.com/stretchr/testify v1.10.0
 	github.com/urfave/cli/v3 v3.3.8
-	golang.org/x/sync v0.13.0
+	golang.org/x/sync v0.21.0
 )
 
 require (
@@ -18,8 +18,8 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/prometheus/client_model v0.6.2 // indirect
 	github.com/prometheus/common v0.65.0 // indirect
-	github.com/prometheus/procfs v0.16.1 // indirect
-	golang.org/x/sys v0.33.0 // indirect
+	github.com/prometheus/procfs v0.21.1 // indirect
+	golang.org/x/sys v0.46.0 // indirect
 	google.golang.org/protobuf v1.36.6 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
