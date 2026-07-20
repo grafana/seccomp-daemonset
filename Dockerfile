@@ -1,4 +1,4 @@
-FROM golang:1.24-alpine AS builder
+FROM golang:1.24-alpine@sha256:8bee1901f1e530bfb4a7850aa7a479d17ae3a18beb6e09064ed54cfd245b7191 AS builder
 
 RUN apk add --no-cache make
 
@@ -6,7 +6,7 @@ WORKDIR /src
 COPY . .
 RUN make build
 
-FROM alpine:edge AS certs
+FROM alpine:edge@sha256:9a341ff2287c54b86425cbee0141114d811ae69d88a36019087be6d896cef241 AS certs
 
 RUN apk add --no-cache ca-certificates && update-ca-certificates --fresh
 
